@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace Winforms
@@ -14,15 +16,20 @@ namespace Winforms
 			InitializeComponent();
 		}
 
-		private void openToolStripMenuItem_Click(object sender, EventArgs e)
+		private async void openToolStripMenuItem_Click(object sender, EventArgs e)
 		{
 			if (openFileDialog1.ShowDialog() == DialogResult.OK)
 			{
+				var sw = Stopwatch.StartNew();
+				menuStrip1.Enabled = trackBar1.Enabled = false;
 				pictureBox1.Image = null;
 				_bitmaps.Clear();
 				var bitmap = new Bitmap(openFileDialog1.FileName);
-				RunProcessing(bitmap);
+				await Task.Run(() => RunProcessing(bitmap));
+				menuStrip1.Enabled = trackBar1.Enabled = true;
 				pictureBox1.Image = new Bitmap(openFileDialog1.FileName);
+				sw.Stop();
+				Text = sw.Elapsed.ToString();
 			}
 		}
 
@@ -45,7 +52,7 @@ namespace Winforms
 					currentBitmap.SetPixel(pixel.Point.X, pixel.Point.Y, pixel.Color);
 				_bitmaps.Add(currentBitmap);
 
-				Text = $"{i} %";
+				this.Invoke(new Action(() => Text = $"{i} %"));
 			}
 			_bitmaps.Add(bitmap);
 		}
@@ -66,7 +73,6 @@ namespace Winforms
 
 		private void trackBar1_Scroll(object sender, EventArgs e)
 		{
-			Text = trackBar1.Value.ToString();
 			if (_bitmaps == null || _bitmaps.Count == 0)
 				return;
 
